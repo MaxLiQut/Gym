@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Зал">
+<meta name="theme-color" content="#0e0f12">
+<title>Тренувальний щоденник</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e0f12;
+    --bg2:#121419;
+    --surface:#16181f;
+    --surface2:#1c1f28;
+    --line:#2a2e3a;
+    --line-soft:#23262f;
+    --txt:#eef1f6;
+    --txt-dim:#9aa2b1;
+    --txt-faint:#646b7a;
+    --accent:#cdf546;
+    --accent-dim:#9bbb2f;
+    --up:#7be081;
+    --same:#e0b341;
+    --down:#ef7a6b;
+    --radius:16px;
+    --radius-sm:11px;
+    --f-display:'Anton','Arial Narrow',system-ui,sans-serif;
+    --f-body:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+    --f-mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+    --safe-t:env(safe-area-inset-top,0px);
+    --safe-b:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--f-body);
+    color:var(--txt);
+    background:var(--bg);
+    background-image:
+      radial-gradient(120% 80% at 100% 0%, rgba(205,245,70,.06), transparent 55%),
+      radial-gradient(120% 80% at 0% 8%, rgba(80,120,255,.05), transparent 50%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+    background-attachment:fixed;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    font-size:15px;
+    line-height:1.4;
+  }
+  .app{max-width:560px;margin:0 auto;padding-bottom:calc(40px + var(--safe-b));}
+
+  /* HEADER */
+  header.top{
+    position:sticky;top:0;z-index:30;
+    padding:calc(10px + var(--safe-t)) 16px 10px;
+    background:rgba(14,15,18,.82);
+    backdrop-filter:saturate(140%) blur(14px);
+    -webkit-backdrop-filter:saturate(140%) blur(14px);
+    border-bottom:1px solid var(--line-soft);
+  }
+  .brand-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .brand{display:flex;align-items:baseline;gap:9px;min-width:0;}
+  .brand .mark{
+    font-family:var(--f-display);font-size:23px;letter-spacing:.5px;line-height:1;
+    color:var(--bg);background:var(--accent);
+    padding:5px 9px 3px;border-radius:8px;transform:translateY(-1px);
+  }
+  .brand .name{font-family:var(--f-display);font-size:20px;letter-spacing:.6px;color:var(--txt);text-transform:uppercase;}
+  .icon-btn{
+    flex:none;width:40px;height:40px;border-radius:11px;border:1px solid var(--line);
+    background:var(--surface);color:var(--txt);font-size:19px;display:grid;place-items:center;
+    cursor:pointer;transition:.15s;
+  }
+  .icon-btn:active{transform:scale(.93);background:var(--surface2);}
+
+  .week-bar{display:flex;align-items:center;gap:8px;margin-top:12px;}
+  .week-nav{
+    width:42px;height:46px;border-radius:12px;border:1px solid var(--line);
+    background:var(--surface);color:var(--txt);font-size:20px;display:grid;place-items:center;cursor:pointer;flex:none;transition:.15s;
+  }
+  .week-nav:active{transform:scale(.93);}
+  .week-nav:disabled{opacity:.3;cursor:default;}
+  .week-pick{
+    flex:1;height:46px;border:1px solid var(--line);background:var(--surface);border-radius:12px;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;cursor:pointer;overflow:hidden;
+  }
+  .week-pick .wk{font-family:var(--f-display);font-size:18px;letter-spacing:1px;line-height:1;text-transform:uppercase;}
+  .week-pick .wdate{font-family:var(--f-mono);font-size:10.5px;color:var(--txt-faint);margin-top:3px;letter-spacing:.3px;}
+  .week-pick select{position:absolute;inset:0;opacity:0;font-size:16px;}
+  .week-add{
+    width:46px;height:46px;border-radius:12px;border:1px solid var(--accent-dim);
+    background:rgba(205,245,70,.12);color:var(--accent);font-size:24px;display:grid;place-items:center;cursor:pointer;flex:none;transition:.15s;
+  }
+  .week-add:active{transform:scale(.92);}
+
+  /* TABS */
+  .tabs{
+    position:sticky;top:calc(var(--safe-t) + 0px);z-index:20;
+    display:flex;gap:6px;padding:10px 16px;margin-top:0;
+    background:rgba(14,15,18,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line-soft);
+  }
+  .tab{
+    flex:1;text-align:center;padding:10px 4px;border-radius:11px;border:1px solid transparent;
+    font-family:var(--f-display);font-size:14px;letter-spacing:.8px;text-transform:uppercase;
+    color:var(--txt-dim);background:var(--surface);cursor:pointer;transition:.15s;user-select:none;
+  }
+  .tab.active{color:var(--bg);background:var(--accent);border-color:var(--accent);}
+  .tab:not(.active):active{background:var(--surface2);}
+
+  main{padding:16px 16px 0;}
+
+  .day-head{margin:4px 2px 14px;}
+  .day-head .dt{font-family:var(--f-display);font-size:27px;letter-spacing:.6px;text-transform:uppercase;line-height:1;}
+  .day-head .ds{color:var(--accent);font-size:13px;font-weight:600;letter-spacing:.4px;margin-top:5px;text-transform:uppercase;}
+
+  /* EXERCISE CARD */
+  .card{
+    background:linear-gradient(180deg,var(--surface) 0%, #14161d 100%);
+    border:1px solid var(--line-soft);border-radius:var(--radius);
+    padding:14px 14px 12px;margin-bottom:13px;
+    animation:rise .4s cubic-bezier(.2,.7,.3,1) both;
+  }
+  @keyframes rise{from{opacity:0;transform:translateY(9px);}to{opacity:1;transform:none;}}
+  .ex-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .ex-name{font-family:var(--f-display);font-size:18px;letter-spacing:.4px;line-height:1.05;text-transform:uppercase;}
+  .ex-alt{color:var(--txt-faint);font-size:12px;font-weight:500;margin-top:3px;}
+  .ex-tag{
+    flex:none;font-family:var(--f-mono);font-size:10px;color:var(--accent);
+    border:1px solid var(--accent-dim);border-radius:6px;padding:3px 6px;letter-spacing:.4px;white-space:nowrap;
+    background:rgba(205,245,70,.07);
+  }
+  .ex-meta{
+    display:flex;flex-wrap:wrap;gap:6px;margin:11px 0 12px;
+  }
+  .chip{
+    font-family:var(--f-mono);font-size:10.5px;color:var(--txt-dim);
+    background:var(--surface2);border:1px solid var(--line-soft);border-radius:6px;padding:4px 7px;letter-spacing:.2px;
+  }
+  .chip b{color:var(--txt);font-weight:600;}
+  .chip.warm{color:var(--same);border-color:rgba(224,179,65,.25);}
+
+  .sets{display:flex;flex-direction:column;gap:8px;}
+  .set-row{display:flex;align-items:center;gap:9px;}
+  .set-no{
+    flex:none;width:26px;height:26px;border-radius:8px;background:var(--surface2);border:1px solid var(--line-soft);
+    font-family:var(--f-mono);font-size:12px;color:var(--txt-dim);display:grid;place-items:center;
+  }
+  .field{position:relative;flex:1;}
+  .field input{
+    width:100%;height:48px;border-radius:11px;border:1px solid var(--line);
+    background:#0f1116;color:var(--txt);
+    font-family:var(--f-mono);font-size:18px;font-weight:500;text-align:center;
+    padding:14px 8px 4px;letter-spacing:.5px;transition:.15s;
+  }
+  .field input:focus{outline:none;border-color:var(--accent);background:#11140d;box-shadow:0 0 0 3px rgba(205,245,70,.12);}
+  .field input::placeholder{color:#3c424e;}
+  .field .lab{
+    position:absolute;top:6px;left:11px;font-family:var(--f-mono);font-size:9px;letter-spacing:1px;
+    color:var(--txt-faint);text-transform:uppercase;pointer-events:none;
+  }
+  .field input.filled{border-color:var(--line);background:#101a10;}
+  .field input.filled + .lab{color:var(--accent-dim);}
+  .mult{flex:none;color:var(--txt-faint);font-family:var(--f-mono);font-size:15px;}
+  .prev{
+    margin:5px 0 0 35px;font-family:var(--f-mono);font-size:10.5px;color:var(--txt-faint);letter-spacing:.2px;height:13px;
+  }
+  .prev b{color:var(--txt-dim);font-weight:500;}
+  .note-in{
+    width:100%;margin-top:11px;border:1px dashed var(--line);background:transparent;border-radius:9px;
+    color:var(--txt-dim);font-family:var(--f-body);font-size:13px;padding:9px 11px;resize:none;
+  }
+  .note-in:focus{outline:none;border-color:var(--accent-dim);border-style:solid;color:var(--txt);}
+  .note-in::placeholder{color:#454b58;}
+
+  /* STATS */
+  .stat-hero{
+    background:linear-gradient(135deg,#1a1d12 0%, var(--surface) 60%);
+    border:1px solid var(--accent-dim);border-radius:var(--radius);padding:16px 16px 15px;margin-bottom:14px;
+    animation:rise .4s both;
+  }
+  .stat-hero .lbl{font-family:var(--f-mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent-dim);}
+  .stat-hero .big{font-family:var(--f-display);font-size:44px;line-height:1;letter-spacing:.5px;margin-top:7px;}
+  .stat-hero .big small{font-family:var(--f-body);font-size:15px;font-weight:600;color:var(--txt-dim);letter-spacing:0;margin-left:4px;}
+  .stat-hero .sub{display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap;}
+  .delta{font-family:var(--f-mono);font-size:12px;font-weight:600;padding:3px 8px;border-radius:7px;letter-spacing:.3px;}
+  .delta.up{color:var(--up);background:rgba(123,224,129,.12);}
+  .delta.same{color:var(--same);background:rgba(224,179,65,.12);}
+  .delta.down{color:var(--down);background:rgba(239,122,107,.12);}
+  .delta.new{color:var(--txt-dim);background:var(--surface2);}
+  .mini-stat{font-family:var(--f-mono);font-size:11.5px;color:var(--txt-dim);}
+  .mini-stat b{color:var(--txt);}
+
+  .sec-title{font-family:var(--f-display);font-size:15px;letter-spacing:.8px;text-transform:uppercase;color:var(--txt-dim);margin:18px 2px 11px;}
+  .sec-note{font-family:var(--f-mono);font-size:10.5px;color:var(--txt-faint);margin:-6px 2px 12px;letter-spacing:.2px;}
+
+  .lift{
+    background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--radius-sm);
+    padding:12px 13px;margin-bottom:9px;animation:rise .35s both;
+  }
+  .lift-top{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .lift-name{font-size:13.5px;font-weight:600;min-width:0;}
+  .lift-name .dtag{font-family:var(--f-mono);font-size:9.5px;color:var(--txt-faint);margin-left:6px;letter-spacing:.4px;}
+  .lift-best{font-family:var(--f-mono);font-size:16px;font-weight:600;white-space:nowrap;}
+  .lift-best .u{color:var(--txt-faint);font-size:12px;font-weight:400;}
+  .lift-bot{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:10px;}
+  .bars{display:flex;align-items:flex-end;gap:3px;height:30px;flex:1;}
+  .bar{flex:1;max-width:14px;background:var(--line);border-radius:3px 3px 0 0;min-height:3px;transition:.3s;position:relative;}
+  .bar.cur{background:var(--accent);}
+  .bars-empty{font-family:var(--f-mono);font-size:10px;color:var(--txt-faint);}
+
+  .empty-note{
+    text-align:center;color:var(--txt-faint);font-family:var(--f-mono);font-size:12px;
+    padding:30px 20px;line-height:1.7;
+  }
+
+  /* MODAL */
+  .ov{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(3px);z-index:50;display:none;align-items:flex-end;justify-content:center;}
+  .ov.show{display:flex;}
+  .sheet{
+    width:100%;max-width:560px;background:var(--bg2);border:1px solid var(--line);
+    border-radius:20px 20px 0 0;padding:18px 16px calc(20px + var(--safe-b));
+    animation:up .25s cubic-bezier(.2,.7,.3,1);max-height:88vh;overflow:auto;
+  }
+  @keyframes up{from{transform:translateY(40px);opacity:.6;}to{transform:none;opacity:1;}}
+  .sheet h3{font-family:var(--f-display);font-size:18px;letter-spacing:.6px;text-transform:uppercase;margin:0 0 4px;}
+  .sheet p{color:var(--txt-dim);font-size:12.5px;margin:0 0 16px;}
+  .sheet .grp{margin-bottom:18px;}
+  .sheet .grp-l{font-family:var(--f-mono);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--txt-faint);margin-bottom:8px;}
+  .btn{
+    width:100%;border:1px solid var(--line);background:var(--surface);color:var(--txt);
+    border-radius:12px;padding:13px;font-family:var(--f-body);font-size:14px;font-weight:600;cursor:pointer;transition:.15s;margin-bottom:8px;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn.accent{background:var(--accent);color:var(--bg);border-color:var(--accent);}
+  .btn.danger{color:var(--down);border-color:rgba(239,122,107,.35);background:rgba(239,122,107,.06);}
+  .ta{
+    width:100%;min-height:90px;border:1px solid var(--line);background:#0f1116;color:var(--txt);
+    border-radius:11px;padding:11px;font-family:var(--f-mono);font-size:12px;resize:vertical;margin-bottom:8px;
+  }
+  .ta:focus{outline:none;border-color:var(--accent);}
+  .hint{font-family:var(--f-mono);font-size:10.5px;color:var(--txt-faint);line-height:1.6;margin-top:6px;}
+  .close-x{position:absolute;}
+  .saved-pill{font-family:var(--f-mono);font-size:9.5px;color:var(--txt-faint);letter-spacing:.5px;text-align:center;padding:6px;}
+  .toast{
+    position:fixed;left:50%;bottom:calc(24px + var(--safe-b));transform:translateX(-50%) translateY(20px);
+    background:var(--accent);color:var(--bg);font-family:var(--f-mono);font-size:12px;font-weight:600;
+    padding:10px 16px;border-radius:10px;z-index:80;opacity:0;transition:.25s;pointer-events:none;letter-spacing:.3px;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand-row">
+      <div class="brand">
+        <span class="mark">GYM</span>
+        <span class="name">Щоденник</span>
+      </div>
+      <button class="icon-btn" id="gearBtn" aria-label="Дані">⚙</button>
+    </div>
+    <div class="week-bar">
+      <button class="week-nav" id="wkPrev" aria-label="Попередній тиждень">‹</button>
+      <div class="week-pick">
+        <span class="wk" id="wkLabel">ТИЖДЕНЬ 1</span>
+        <span class="wdate" id="wkDate"></span>
+        <select id="wkSelect" aria-label="Обрати тиждень"></select>
+      </div>
+      <button class="week-nav" id="wkNext" aria-label="Наступний тиждень">›</button>
+      <button class="week-add" id="wkAdd" aria-label="Новий тиждень">+</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <div class="tab active" data-view="mon">Пн</div>
+    <div class="tab" data-view="wed">Ср</div>
+    <div class="tab" data-view="fri">Пт</div>
+    <div class="tab" data-view="stats">Огляд</div>
+  </nav>
+
+  <main id="main"></main>
+  <div class="saved-pill">↻ автозбереження у цьому браузері</div>
+</div>
+
+<!-- DATA SHEET -->
+<div class="ov" id="ov">
+  <div class="sheet">
+    <h3>Дані та резервні копії</h3>
+    <p>Записи зберігаються в пам'яті браузера на цьому пристрої. Час від часу роби резервну копію.</p>
+
+    <div class="grp">
+      <div class="grp-l">Резервна копія</div>
+      <button class="btn accent" id="btnCopy">📋 Копіювати всі дані</button>
+      <button class="btn" id="btnDownload">⬇ Завантажити файл (.json)</button>
+      <div class="hint">«Копіювати» збереже текст у буфер — встав його собі в нотатки як бекап.</div>
+    </div>
+
+    <div class="grp">
+      <div class="grp-l">Відновлення</div>
+      <textarea class="ta" id="importTa" placeholder="Встав сюди раніше скопійовані дані…"></textarea>
+      <button class="btn" id="btnImport">↺ Відновити з тексту</button>
+    </div>
+
+    <div class="grp">
+      <div class="grp-l">Небезпечна зона</div>
+      <button class="btn danger" id="btnDelWeek">🗑 Видалити поточний тиждень</button>
+      <button class="btn danger" id="btnReset">⨯ Скинути все</button>
+    </div>
+
+    <button class="btn" id="btnClose">Закрити</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ---------- ПРОГРАМА (фіксована) ---------- */
+const PROGRAM = {
+  mon:{ label:"Понеділок", sub:"Ноги + груди", ex:[
+    {id:"mon_legpress", n:"Жим ногами", alt:"або присід зі штангою", w:3, s:3, r:"8–10", rpe:"6–7", rir:"3–4", rest:"2–3 хв", key:1},
+    {id:"mon_bench",    n:"Жим лежачи", alt:"штанга / гантелі", w:2, s:3, r:"8–10", rpe:"6–7", rir:"3–4", rest:"2–3 хв", key:1},
+    {id:"mon_pull",     n:"Тяга верхнього блоку", alt:"широкий хват", w:1, s:3, r:"10–12", rpe:"6–7", rir:"3", rest:"90 сек", key:1},
+    {id:"mon_legcurl",  n:"Згинання ніг", alt:"лежачи / сидячи", w:1, s:3, r:"10–12", rpe:"7", rir:"2–3", rest:"90 сек"},
+    {id:"mon_plank",    n:"Планка", alt:"", w:0, s:3, r:"30–45 сек", rpe:"—", rir:"—", rest:"60 сек", timed:1},
+  ]},
+  wed:{ label:"Середа", sub:"Спина + плечі", ex:[
+    {id:"wed_rdl",   n:"Румунська тяга", alt:"штанга / гантелі", w:3, s:3, r:"8–10", rpe:"6–7", rir:"3–4", rest:"2–3 хв", key:1},
+    {id:"wed_row",   n:"Тяга гантелі в нахилі", alt:"або тяга нижнього блоку", w:2, s:3, r:"8–10", rpe:"6–7", rir:"3", rest:"90–120 сек", key:1},
+    {id:"wed_incl",  n:"Жим гантелей на похилій", alt:"перший жим дня · 30–45°", w:2, s:3, r:"8–10", rpe:"6–7", rir:"3", rest:"90–120 сек", key:1},
+    {id:"wed_ohp",   n:"Жим гантелей на плечі", alt:"сидячи", w:1, s:3, r:"10–12", rpe:"7", rir:"2–3", rest:"90 сек", key:1},
+    {id:"wed_face",  n:"Face pulls", alt:"трос з канатом", w:1, s:3, r:"12–15", rpe:"7", rir:"2–3", rest:"60–90 сек"},
+  ]},
+  fri:{ label:"П'ятниця", sub:"Змішане + руки", ex:[
+    {id:"fri_legpress", n:"Жим ногами", alt:"або гак-присід", w:3, s:3, r:"10–12", rpe:"7", rir:"2–3", rest:"90–120 сек", key:1},
+    {id:"fri_pullup",   n:"Підтягування", alt:"з гумою / гравітрон", w:2, s:3, r:"8–10", rpe:"7", rir:"2–3", rest:"90–120 сек", key:1},
+    {id:"fri_incl",     n:"Жим гантелей на похилій", alt:"перший жим дня", w:2, s:3, r:"10–12", rpe:"7", rir:"2–3", rest:"90–120 сек", key:1},
+    {id:"fri_lat",      n:"Махи гантелями в сторони", alt:"", w:1, s:3, r:"12–15", rpe:"7–8", rir:"1–2", rest:"60–90 сек"},
+    {id:"fri_curl",     n:"Згинання рук з гантелями", alt:"", w:1, s:3, r:"10–12", rpe:"7–8", rir:"1–2", rest:"60 сек"},
+    {id:"fri_tri",      n:"Розгинання рук на блоці", alt:"", w:1, s:3, r:"10–12", rpe:"7–8", rir:"1–2", rest:"60 сек"},
+    {id:"fri_calf",     n:"Підйоми на носки", alt:"", w:0, s:3, r:"12–15", rpe:"7–8", rir:"1–2", rest:"60 сек"},
+  ]},
+};
+const DAYS = ["mon","wed","fri"];
+const DAY_ABBR = {mon:"Пн", wed:"Ср", fri:"Пт"};
+
+/* ---------- СХОВИЩЕ (з безпечним фолбеком) ---------- */
+const KEY = "gymlog_v1";
+let memStore = null;
+function load(){
+  try{ const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : null; }
+  catch(e){ return memStore; }
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch(e){ memStore = state; }
+}
+
+/* ---------- СТАН ---------- */
+let state = load();
+if(!state || !state.weeks || !state.weeks.length){
+  state = { cur:1, weeks:[ newWeek(1) ] };
+  save();
+}
+let view = "mon";
+
+function todayStr(){
+  const d = new Date();
+  return ("0"+d.getDate()).slice(-2)+"."+("0"+(d.getMonth()+1)).slice(-2);
+}
+function newWeek(num){
+  return { num:num, date:todayStr(), log:{} };
+}
+function curWeek(){ return state.weeks.find(w=>w.num===state.cur) || state.weeks[0]; }
+function weekIndex(num){ return state.weeks.findIndex(w=>w.num===num); }
+function cell(week, exId){
+  week.log[exId] = week.log[exId] || { sets:[], note:"" };
+  return week.log[exId];
+}
+
+/* ---------- ХЕЛПЕРИ ---------- */
+function num(v){ if(v==null) return NaN; const x = parseFloat(String(v).replace(",",".")); return isNaN(x)?NaN:x; }
+function fmtNum(x){ return Number.isInteger(x) ? String(x) : String(Math.round(x*100)/100); }
+
+// найкращий робочий підхід: спершу за вагою, потім за повторами
+function bestSet(week, ex){
+  const c = week.log[ex.id]; if(!c) return null;
+  let best = null;
+  c.sets.forEach(st=>{
+    if(!st) return;
+    const reps = num(st.reps);
+    if(isNaN(reps) || reps<=0) return;
+    const kg = isNaN(num(st.kg)) ? 0 : num(st.kg);
+    const score = kg*100000 + reps;
+    if(!best || score>best.score) best = {kg, reps, score};
+  });
+  return best;
+}
+// значення для тренду/дельти (вага, або повтори якщо ваги нема)
+function bestVal(week, ex){
+  const b = bestSet(week, ex); if(!b) return null;
+  return { val: b.kg>0 ? b.kg : b.reps, byWeight: b.kg>0, kg:b.kg, reps:b.reps };
+}
+// тоннаж тижня (тільки робочі підходи з вагою і повторами)
+function weekVolume(week){
+  let v = 0;
+  DAYS.forEach(d=>PROGRAM[d].ex.forEach(ex=>{
+    if(ex.timed) return;
+    const c = week.log[ex.id]; if(!c) return;
+    c.sets.forEach(st=>{
+      if(!st) return;
+      const kg=num(st.kg), reps=num(st.reps);
+      if(kg>0 && reps>0) v += kg*reps;
+    });
+  }));
+  return v;
+}
+function filledSets(week){
+  let n=0;
+  DAYS.forEach(d=>PROGRAM[d].ex.forEach(ex=>{
+    const c = week.log[ex.id]; if(!c) return;
+    c.sets.forEach(st=>{ if(st && num(st.reps)>0) n++; });
+  }));
+  return n;
+}
+// найближчий попередній тиждень з даними по вправі
+function prevBest(curNum, ex){
+  const idx = weekIndex(curNum);
+  for(let i=idx-1;i>=0;i--){
+    const bv = bestVal(state.weeks[i], ex);
+    if(bv) return bv;
+  }
+  return null;
+}
+
+/* ---------- РЕНДЕР ---------- */
+const main = document.getElementById("main");
+
+// відстеження поля у фокусі (щоб синхронізація не чіпала те, що зараз редагують)
+let focusedEl = null;
+main.addEventListener("focusin", e=>{ focusedEl = e.target; });
+main.addEventListener("focusout", ()=>{ focusedEl = null; });
+
+// примусово зберігаємо, коли сторінку ховають або закривають
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden) save(); });
+window.addEventListener("pagehide", save);
+window.addEventListener("beforeunload", save);
+
+function render(){
+  renderWeekBar();
+  if(view==="stats") renderStats();
+  else renderDay(view);
+}
+
+function renderWeekBar(){
+  const w = curWeek();
+  document.getElementById("wkLabel").textContent = "ТИЖДЕНЬ "+w.num;
+  document.getElementById("wkDate").textContent = "початок "+w.date;
+  const sel = document.getElementById("wkSelect");
+  sel.innerHTML = state.weeks.map(x=>`<option value="${x.num}" ${x.num===w.num?"selected":""}>Тиждень ${x.num} · ${x.date}</option>`).join("");
+  const idx = weekIndex(w.num);
+  document.getElementById("wkPrev").disabled = idx<=0;
+  document.getElementById("wkNext").disabled = idx>=state.weeks.length-1;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.view===view));
+}
+
+function renderDay(day){
+  const w = curWeek();
+  const D = PROGRAM[day];
+  let html = `<div class="day-head"><div class="dt">${D.label}</div><div class="ds">${D.sub}</div></div>`;
+  D.ex.forEach((ex,i)=>{
+    const c = cell(w, ex);
+    const prev = prevBest(w.num, ex);
+    const warmChip = ex.w>0 ? `<span class="chip warm">розминка ×${ex.w}</span>` : (ex.timed?``:`<span class="chip warm">розминка 0–1</span>`);
+    const rpeChip = ex.rpe!=="—" ? `<span class="chip">RPE <b>${ex.rpe}</b></span><span class="chip">RIR <b>${ex.rir}</b></span>` : "";
+    let setsHtml = "";
+    for(let s=0;s<ex.s;s++){
+      const st = c.sets[s] || {};
+      const kgFilled = num(st.kg)>0 ? "filled" : "";
+      const repFilled = num(st.reps)>0 ? "filled" : "";
+      if(ex.timed){
+        setsHtml += `
+          <div class="set-row">
+            <span class="set-no">${s+1}</span>
+            <div class="field" style="flex:1">
+              <input type="text" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" name="f_${ex.id}_${s}_sec" class="${repFilled}" data-ex="${ex.id}" data-set="${s}" data-f="reps" value="${st.reps||""}" placeholder="—">
+              <span class="lab">секунди</span>
+            </div>
+          </div>`;
+      }else{
+        setsHtml += `
+          <div class="set-row">
+            <span class="set-no">${s+1}</span>
+            <div class="field">
+              <input type="text" inputmode="decimal" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" name="f_${ex.id}_${s}_kg" class="${kgFilled}" data-ex="${ex.id}" data-set="${s}" data-f="kg" value="${st.kg||""}" placeholder="0">
+              <span class="lab">кг</span>
+            </div>
+            <span class="mult">×</span>
+            <div class="field">
+              <input type="text" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" name="f_${ex.id}_${s}_r" class="${repFilled}" data-ex="${ex.id}" data-set="${s}" data-f="reps" value="${st.reps||""}" placeholder="0">
+              <span class="lab">повт</span>
+            </div>
+          </div>`;
+      }
+    }
+    let prevTxt = "";
+    if(prev){
+      if(ex.timed) prevTxt = `<span class="prev">минулого: <b>${fmtNum(prev.reps)} сек</b></span>`;
+      else if(prev.byWeight) prevTxt = `<span class="prev">минулого найкраще: <b>${fmtNum(prev.kg)} × ${fmtNum(prev.reps)}</b></span>`;
+      else prevTxt = `<span class="prev">минулого найкраще: <b>${fmtNum(prev.reps)} повт</b></span>`;
+    }
+    html += `
+      <div class="card" style="animation-delay:${i*0.04}s">
+        <div class="ex-top">
+          <div>
+            <div class="ex-name">${ex.n}</div>
+            ${ex.alt?`<div class="ex-alt">${ex.alt}</div>`:""}
+          </div>
+          <span class="ex-tag">${ex.timed?ex.r:ex.s+" × "+ex.r}</span>
+        </div>
+        <div class="ex-meta">
+          ${rpeChip}
+          <span class="chip">відп. <b>${ex.rest}</b></span>
+          ${warmChip}
+        </div>
+        <div class="sets">${setsHtml}</div>
+        ${prevTxt}
+        <textarea class="note-in" rows="1" data-ex="${ex.id}" data-f="note" placeholder="нотатка (відчуття, біль, техніка)…">${c.note||""}</textarea>
+      </div>`;
+  });
+  main.innerHTML = html;
+  bindInputs();
+}
+
+function deltaTag(cur, prev, byWeight){
+  if(prev==null) return `<span class="delta new">новий</span>`;
+  const d = Math.round((cur-prev)*100)/100;
+  const unit = byWeight ? " кг" : " повт";
+  if(d>0) return `<span class="delta up">↑ +${fmtNum(d)}${unit}</span>`;
+  if(d<0) return `<span class="delta down">↓ ${fmtNum(d)}${unit}</span>`;
+  return `<span class="delta same">= без змін</span>`;
+}
+
+function renderStats(){
+  const w = curWeek();
+  const idx = weekIndex(w.num);
+  const vol = weekVolume(w);
+  const prevVol = idx>0 ? weekVolume(state.weeks[idx-1]) : null;
+  let volDelta = `<span class="delta new">перший тиждень</span>`;
+  if(prevVol!=null && prevVol>0){
+    const pct = Math.round((vol-prevVol)/prevVol*100);
+    if(pct>0) volDelta = `<span class="delta up">↑ +${pct}% vs тиждень ${state.weeks[idx-1].num}</span>`;
+    else if(pct<0) volDelta = `<span class="delta down">↓ ${pct}% vs тиждень ${state.weeks[idx-1].num}</span>`;
+    else volDelta = `<span class="delta same">= як минулого</span>`;
+  }
+
+  let html = `
+    <div class="day-head"><div class="dt">Огляд</div><div class="ds">Тиждень ${w.num}</div></div>
+    <div class="stat-hero">
+      <div class="lbl">Об'єм за тиждень (тоннаж)</div>
+      <div class="big">${vol>0?vol.toLocaleString("uk-UA"):"—"}<small>кг</small></div>
+      <div class="sub">
+        ${volDelta}
+        <span class="mini-stat">робочих підходів: <b>${filledSets(w)}</b></span>
+      </div>
+    </div>
+    <div class="sec-title">Основні вправи</div>
+    <div class="sec-note">найкращий робочий підхід цього тижня · стрілка = зміна vs попередній</div>
+  `;
+
+  // зібрати ключові вправи в порядку днів
+  const keyEx = [];
+  DAYS.forEach(d=>PROGRAM[d].ex.forEach(ex=>{ if(ex.key) keyEx.push({ex, day:d}); }));
+
+  let any = false;
+  keyEx.forEach((item,i)=>{
+    const ex = item.ex;
+    const bv = bestVal(w, ex);
+    const prev = prevBest(w.num, ex);
+    // тренд по всіх тижнях
+    const vals = state.weeks.map(week=>{ const b=bestVal(week,ex); return b?b.val:0; });
+    const maxV = Math.max(...vals, 1);
+    let bestTxt = `<span class="u">—</span>`;
+    if(bv){
+      bestTxt = bv.byWeight ? `${fmtNum(bv.kg)} <span class="u">×</span> ${fmtNum(bv.reps)}` : `${fmtNum(bv.reps)} <span class="u">повт</span>`;
+      any = true;
+    }
+    const dtag = bv ? deltaTag(bv.val, prev?prev.val:null, bv.byWeight) : "";
+    const bars = vals.map((v,k)=>{
+      const h = v>0 ? Math.max(3, Math.round(v/maxV*30)) : 3;
+      const isCur = state.weeks[k].num===w.num;
+      return `<div class="bar ${isCur?"cur":""}" style="height:${h}px" title="Т${state.weeks[k].num}: ${v>0?fmtNum(v):"—"}"></div>`;
+    }).join("");
+    html += `
+      <div class="lift" style="animation-delay:${i*0.03}s">
+        <div class="lift-top">
+          <div class="lift-name">${ex.n}<span class="dtag">${DAY_ABBR[item.day]}</span></div>
+          <div class="lift-best">${bestTxt}</div>
+        </div>
+        <div class="lift-bot">
+          <div class="bars">${vals.length?bars:'<span class="bars-empty">нема даних</span>'}</div>
+          ${dtag}
+        </div>
+      </div>`;
+  });
+
+  if(!any && state.weeks.length===1){
+    html += `<div class="empty-note">Заповни ваги й повтори на вкладках Пн / Ср / Пт —<br>і тут зʼявиться твоя статистика та прогрес по тижнях.</div>`;
+  }
+  main.innerHTML = html;
+}
+
+/* ---------- ВВЕДЕННЯ ---------- */
+let saveTimer=null;
+function bindInputs(){
+  main.querySelectorAll("input[data-ex]").forEach(inp=>{
+    const commit = e=>{
+      const {ex, set, f} = e.target.dataset;
+      const c = cell(curWeek(), {id:ex, s:0});
+      c.sets[+set] = c.sets[+set] || {};
+      c.sets[+set][f] = e.target.value;
+      e.target.classList.toggle("filled", num(e.target.value)>0);
+    };
+    inp.addEventListener("input", e=>{ commit(e); queueSave(); });
+    inp.addEventListener("change", e=>{ commit(e); save(); }); // надійний бекап при втраті фокуса
+  });
+  main.querySelectorAll("textarea[data-ex]").forEach(t=>{
+    autoGrow(t);
+    t.addEventListener("input", e=>{
+      cell(curWeek(), {id:e.target.dataset.ex, s:0}).note = e.target.value;
+      autoGrow(e.target);
+      queueSave();
+    });
+  });
+  // вирівнюємо поля до збережених даних один раз (захист від autofill на старті)
+  syncFromState();
+}
+// перезаписує значення полів тим, що реально збережено (autofill не пройде)
+function syncFromState(){
+  const w = curWeek();
+  main.querySelectorAll("input[data-ex]").forEach(inp=>{
+    const c = w.log[inp.dataset.ex];
+    const st = c && c.sets ? c.sets[+inp.dataset.set] : null;
+    const v = st && st[inp.dataset.f]!=null ? st[inp.dataset.f] : "";
+    if(inp.value !== v && focusedEl !== inp){
+      inp.value = v;
+      inp.classList.toggle("filled", num(v)>0);
+    }
+  });
+}
+function autoGrow(t){ t.style.height="auto"; t.style.height=Math.min(t.scrollHeight,160)+"px"; }
+function queueSave(){ clearTimeout(saveTimer); saveTimer=setTimeout(save,300); }
+
+/* ---------- ПОДІЇ ---------- */
+document.getElementById("tabs").addEventListener("click", e=>{
+  const t = e.target.closest(".tab"); if(!t) return;
+  view = t.dataset.view; render();
+  window.scrollTo({top:0,behavior:"smooth"});
+});
+document.getElementById("wkPrev").onclick = ()=>{ const i=weekIndex(state.cur); if(i>0){ state.cur=state.weeks[i-1].num; save(); render(); } };
+document.getElementById("wkNext").onclick = ()=>{ const i=weekIndex(state.cur); if(i<state.weeks.length-1){ state.cur=state.weeks[i+1].num; save(); render(); } };
+document.getElementById("wkSelect").onchange = e=>{ state.cur=+e.target.value; save(); render(); };
+document.getElementById("wkAdd").onclick = ()=>{
+  const maxNum = Math.max(...state.weeks.map(w=>w.num));
+  const w = newWeek(maxNum+1);
+  state.weeks.push(w);
+  state.weeks.sort((a,b)=>a.num-b.num);
+  state.cur = w.num;
+  save(); view = "mon"; render();
+  toast("Тиждень "+w.num+" створено");
+  window.scrollTo({top:0,behavior:"smooth"});
+};
+
+/* модалка */
+const ov = document.getElementById("ov");
+document.getElementById("gearBtn").onclick = ()=>ov.classList.add("show");
+document.getElementById("btnClose").onclick = ()=>ov.classList.remove("show");
+ov.addEventListener("click", e=>{ if(e.target===ov) ov.classList.remove("show"); });
+
+document.getElementById("btnCopy").onclick = async ()=>{
+  const txt = JSON.stringify(state);
+  try{ await navigator.clipboard.writeText(txt); toast("Скопійовано ✓"); }
+  catch(e){ const ta=document.getElementById("importTa"); ta.value=txt; ta.select(); toast("Виділено — скопіюй вручну"); }
+};
+document.getElementById("btnDownload").onclick = ()=>{
+  const blob = new Blob([JSON.stringify(state,null,1)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href=url; a.download="gym-log-"+todayStr().replace(".","-")+".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast("Файл завантажується");
+};
+document.getElementById("btnImport").onclick = ()=>{
+  const v = document.getElementById("importTa").value.trim();
+  if(!v) return toast("Спершу встав дані");
+  try{
+    const obj = JSON.parse(v);
+    if(!obj.weeks || !Array.isArray(obj.weeks)) throw 0;
+    state = obj; if(!curWeek()) state.cur = state.weeks[0].num;
+    save(); ov.classList.remove("show"); view="mon"; render();
+    toast("Дані відновлено ✓");
+  }catch(e){ toast("Не вдалось прочитати дані"); }
+};
+document.getElementById("btnDelWeek").onclick = ()=>{
+  if(state.weeks.length<=1) return toast("Має лишитись хоч 1 тиждень");
+  const w = curWeek();
+  if(!confirm("Видалити Тиждень "+w.num+"? Це не можна скасувати.")) return;
+  state.weeks = state.weeks.filter(x=>x.num!==w.num);
+  state.cur = state.weeks[state.weeks.length-1].num;
+  save(); render(); toast("Тиждень видалено");
+};
+document.getElementById("btnReset").onclick = ()=>{
+  if(!confirm("Скинути ВСІ дані повністю?")) return;
+  state = { cur:1, weeks:[ newWeek(1) ] };
+  save(); ov.classList.remove("show"); view="mon"; render(); toast("Скинуто");
+};
+
+/* toast */
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),1800);
+}
+
+/* старт */
+render();
+</script>
+</body>
+</html>
