@@ -51,7 +51,7 @@
     font-size:15px;
     line-height:1.4;
   }
-  .app{max-width:560px;margin:0 auto;padding-bottom:calc(40px + var(--safe-b));}
+  .app{max-width:560px;margin:0 auto;padding-bottom:calc(96px + var(--safe-b));}
 
   /* HEADER */
   header.top{
@@ -246,13 +246,33 @@
   .ta:focus{outline:none;border-color:var(--accent);}
   .hint{font-family:var(--f-mono);font-size:10.5px;color:var(--txt-faint);line-height:1.6;margin-top:6px;}
   .close-x{position:absolute;}
-  .saved-pill{font-family:var(--f-mono);font-size:9.5px;color:var(--txt-faint);letter-spacing:.5px;text-align:center;padding:6px;}
+  .savebar{
+    position:fixed;left:0;right:0;bottom:0;z-index:40;
+    max-width:560px;margin:0 auto;
+    display:flex;align-items:center;gap:12px;
+    padding:12px 16px calc(12px + var(--safe-b));
+    background:rgba(14,15,18,.92);backdrop-filter:saturate(140%) blur(14px);-webkit-backdrop-filter:saturate(140%) blur(14px);
+    border-top:1px solid var(--line);
+  }
+  .save-status{
+    flex:1;min-width:0;font-family:var(--f-mono);font-size:11px;letter-spacing:.3px;color:var(--txt-faint);line-height:1.35;
+  }
+  .save-status.ok{color:var(--up);}
+  .save-status.err{color:var(--down);}
+  .save-btn{
+    flex:none;border:none;background:var(--accent);color:var(--bg);
+    font-family:var(--f-display);font-size:16px;letter-spacing:1px;text-transform:uppercase;
+    padding:13px 26px;border-radius:12px;cursor:pointer;transition:.15s;
+  }
+  .save-btn:active{transform:scale(.95);}
+  .save-btn.saved{background:var(--up);}
   .toast{
-    position:fixed;left:50%;bottom:calc(24px + var(--safe-b));transform:translateX(-50%) translateY(20px);
+    position:fixed;left:50%;bottom:calc(86px + var(--safe-b));transform:translateX(-50%) translateY(20px);
     background:var(--accent);color:var(--bg);font-family:var(--f-mono);font-size:12px;font-weight:600;
-    padding:10px 16px;border-radius:10px;z-index:80;opacity:0;transition:.25s;pointer-events:none;letter-spacing:.3px;
+    padding:10px 16px;border-radius:10px;z-index:80;opacity:0;transition:.25s;pointer-events:none;letter-spacing:.3px;max-width:90%;text-align:center;
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast.err{background:var(--down);color:#fff;}
 </style>
 </head>
 <body>
@@ -285,7 +305,12 @@
   </nav>
 
   <main id="main"></main>
-  <div class="saved-pill">↻ автозбереження у цьому браузері</div>
+</div>
+
+<!-- Панель збереження -->
+<div class="savebar">
+  <div class="save-status" id="saveStatus">Автозбереження увімкнено</div>
+  <button class="save-btn" id="saveBtn">Зберегти</button>
 </div>
 
 <!-- DATA SHEET -->
@@ -354,13 +379,25 @@ const DAY_ABBR = {mon:"Пн", wed:"Ср", fri:"Пт"};
 /* ---------- СХОВИЩЕ (з безпечним фолбеком) ---------- */
 const KEY = "gymlog_v1";
 let memStore = null;
+let storageOK = true; // чи реально працює збереження в браузері
 function load(){
   try{ const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : null; }
-  catch(e){ return memStore; }
+  catch(e){ storageOK = false; return memStore; }
 }
 function save(){
-  try{ localStorage.setItem(KEY, JSON.stringify(state)); }
-  catch(e){ memStore = state; }
+  try{
+    const data = JSON.stringify(state);
+    localStorage.setItem(KEY, data);
+    // перевіряємо, що запис реально стався (приватний режим/блок cookies кидає або не зберігає)
+    const ok = localStorage.getItem(KEY) === data;
+    storageOK = ok;
+    if(ok && typeof updateSaveStatus === "function") updateSaveStatus(true);
+    return ok;
+  }catch(e){
+    memStore = state; storageOK = false;
+    if(typeof updateSaveStatus === "function") updateSaveStatus(false);
+    return false;
+  }
 }
 
 /* ---------- СТАН ---------- */
@@ -725,14 +762,40 @@ document.getElementById("btnReset").onclick = ()=>{
 
 /* toast */
 let toastTimer=null;
-function toast(msg){
+function toast(msg, isErr){
   const t=document.getElementById("toast");
-  t.textContent=msg; t.classList.add("show");
-  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),1800);
+  t.textContent=msg; t.classList.toggle("err", !!isErr); t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"), isErr?4200:1800);
 }
+
+/* статус збереження (оновлюється і при автозбереженні, і при кнопці) */
+function nowHM(){ const d=new Date(); return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2); }
+function updateSaveStatus(ok){
+  const s=document.getElementById("saveStatus");
+  if(!s) return;
+  if(ok){ s.textContent="Збережено о "+nowHM(); s.className="save-status ok"; }
+  else { s.textContent="⚠ Браузер блокує збереження"; s.className="save-status err"; }
+}
+
+/* кнопка Зберегти */
+const saveBtn=document.getElementById("saveBtn");
+saveBtn.onclick=()=>{
+  const ok=save();
+  if(ok){
+    toast("✓ Збережено");
+    saveBtn.textContent="Збережено"; saveBtn.classList.add("saved");
+    setTimeout(()=>{ saveBtn.textContent="Зберегти"; saveBtn.classList.remove("saved"); }, 1400);
+  } else {
+    toast("Збереження заблоковане. Вийди з приватного режиму Safari та дозволь cookies, тоді відкрий сторінку знову.", true);
+  }
+};
 
 /* старт */
 render();
+// перевірка збереження на старті
+if(!storageOK){ updateSaveStatus(false); }
+else { document.getElementById("saveStatus").textContent = "Автозбереження увімкнено"; }
+
 </script>
 </body>
 </html>
